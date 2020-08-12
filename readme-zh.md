@@ -42,56 +42,76 @@ mysql.user.password=your mysql server password
 
 ### 创建 undo_log 表
 
-[Seata AT 模式]() 需要使用到 undo_log 表。
+[Seata AT 模式]() 需要使用到 undo_log 表,oracle 必须创建UNDO_LOG_SEQ，seata已经写死代码。
 
 ``` $sql
--- 注意此处0.3.0+ 增加唯一索引 ux_undo_log
-CREATE TABLE `undo_log` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `branch_id` bigint(20) NOT NULL,
-  `xid` varchar(100) NOT NULL,
-  `context` varchar(128) NOT NULL,
-  `rollback_info` longblob NOT NULL,
-  `log_status` int(11) NOT NULL,
-  `log_created` datetime NOT NULL,
-  `log_modified` datetime NOT NULL,
-  `ext` varchar(100) DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `ux_undo_log` (`xid`,`branch_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+create table UNDO_LOG
+(
+  ID            NUMBER(12)    not null
+    primary key,
+  BRANCH_ID     NUMBER(20)    not null,
+  XID           VARCHAR2(100) not null,
+  CONTEXT       VARCHAR2(128) not null,
+  ROLLBACK_INFO BLOB          not null,
+  LOG_STATUS    NUMBER(11)    not null,
+  LOG_CREATED   TIMESTAMP(6)  not null,
+  LOG_MODIFIED  TIMESTAMP(6)  not null,
+  EXT           VARCHAR2(100) default NULL
+);
+
+create sequence UNDO_LOG_SEQ
+  maxvalue 100000000000000000000
+
+
 ```
 
 ### 创建 示例中 业务所需要的数据库表
 
 ```$sql
-DROP TABLE IF EXISTS `storage_tbl`;
-CREATE TABLE `storage_tbl` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `commodity_code` varchar(255) DEFAULT NULL,
-  `count` int(11) DEFAULT 0,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY (`commodity_code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+create table STORAGE_TBL
+(
+  ID             NUMBER(12) not null
+    primary key,
+  COMMODITY_CODE VARCHAR2(255) default NULL,
+  COUNT          NUMBER(11)    default 0
+);
+
+create trigger  STORAGE_TBL_TRIG
+  before insert
+  on IC_30.STORAGE_TBL
+  for each row
+  when (new.id is null)
+  begin
+
+    select storage_tbl_sequence.nextval
+    into :new.id
+    from dual;
+  end;
 
 
-DROP TABLE IF EXISTS `order_tbl`;
-CREATE TABLE `order_tbl` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` varchar(255) DEFAULT NULL,
-  `commodity_code` varchar(255) DEFAULT NULL,
-  `count` int(11) DEFAULT 0,
-  `money` int(11) DEFAULT 0,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+create table  ORDER_TBL
+(
+  ID VARCHAR2(55) not null
+    primary key,
+  USER_ID VARCHAR2(255) default NULL,
+  COMMODITY_CODE VARCHAR2(255) default NULL,
+  COUNT NUMBER(11) default 0,
+  MONEY NUMBER(11) default 0
+)
+/
 
 
-DROP TABLE IF EXISTS `account_tbl`;
-CREATE TABLE `account_tbl` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` varchar(255) DEFAULT NULL,
-  `money` int(11) DEFAULT 0,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+-- auto-generated definition
+create table ACCOUNT_TBL
+(
+  ID      NUMBER(12) not null
+    primary key,
+  USER_ID VARCHAR2(255) default NULL,
+  MONEY   NUMBER(11)    default 0
+)
 ```
 
 ### 启动 Seata Server
