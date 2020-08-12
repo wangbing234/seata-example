@@ -112,6 +112,12 @@ create table ACCOUNT_TBL
   USER_ID VARCHAR2(255) default NULL,
   MONEY   NUMBER(11)    default 0
 )
+
+create sequence STORAGE_TBL_SEQUENCE
+  nocache;
+  
+  create sequence ACCOUNT_TBL_SEQUENCE
+  nocache;
 ```
 
 ### 启动 Seata Server
